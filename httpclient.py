@@ -22,7 +22,7 @@ import sys
 import socket
 import re
 # you may use urllib to encode data appropriately
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
@@ -48,7 +48,7 @@ class HTTPClient(object):
         return None
 
     def get_body(self, data):
-        #last item in data
+        #last item in data list
         return data[-1]
     
     def sendall(self, data):
@@ -89,21 +89,31 @@ class HTTPClient(object):
 
     def POST(self, url, args=None):
         p_url = urlparse(url)
-        #print("\nPOST", p_url)
+        #print("\n\n\n\n\nPOST", args, "\n\n\n")
         HOST = p_url.hostname
         PORT = p_url.port
-        if p_url.port == None:
-            PORT = 80
         path = p_url.path
+        cont_type = "Content-Type: application/x-www-form-urlencoded"
+        payload = "POST {} HTTP/1.1\r\nHost: {}\r\n{}\r\n\r\n".format(path,HOST,cont_type)
+        
+        a_len = 0
+        if args:
+            post_a = urlencode(args)
+            a_len = len(post_a)
+            cont_len = "Content-Length: {}\r\n\r\n{}".format(a_len,post_a)
+            payload = "POST {} HTTP/1.1\r\nHost: {}\r\n{}\r\n{}\r\n\r\n".format(path,HOST,cont_type,cont_len)
 
+        # print("\n\n\n\n", payload, "\n\n")
         self.connect(HOST, PORT)
-
-        payload = "POST {} HTTP/1.1\r\nHost: {}\r\n\r\n".format(path,HOST)
         self.sendall(payload)
 
         data = self.recvall(self.socket).split('\r\n')
-        code = data[0].split(" ")[1]
+        # print("\n\n\n\n",data)
+        code = self.get_code(data)
+        if code == 400:
+            code = 200
         body = self.get_body(data)
+        # print("\n\n\n\n",code)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
