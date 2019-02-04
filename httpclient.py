@@ -22,7 +22,7 @@ import sys
 import socket
 import re
 # you may use urllib to encode data appropriately
-import urllib.parse
+from urllib.parse import urlparse
 
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
@@ -41,13 +41,15 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        code = data[0].split(" ")[1]
+        return int(code)
 
     def get_headers(self,data):
         return None
 
     def get_body(self, data):
-        return None
+        #last item in data
+        return data[-1]
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -68,13 +70,40 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        u = urlparse(url)
+        HOST = u.hostname
+        PORT = u.port
+        path = u.path
+
+        self.connect(HOST, PORT)
+        
+        payload = "GET {} HTTP/1.1\r\nHost: {}\r\n\r\n".format(path,HOST)
+        self.sendall(payload)
+        
+        data = self.recvall(self.socket).split('\r\n')
+        code = self.get_code(data)
+        #print("\n           CODE", code)
+        
+        body = self.get_body(data)
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        p_url = urlparse(url)
+        #print("\nPOST", p_url)
+        HOST = p_url.hostname
+        PORT = p_url.port
+        if p_url.port == None:
+            PORT = 80
+        path = p_url.path
+
+        self.connect(HOST, PORT)
+
+        payload = "POST {} HTTP/1.1\r\nHost: {}\r\n\r\n".format(path,HOST)
+        self.sendall(payload)
+
+        data = self.recvall(self.socket).split('\r\n')
+        code = data[0].split(" ")[1]
+        body = self.get_body(data)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
