@@ -38,7 +38,6 @@ class HTTPClient(object):
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
-        print("out")
         return None
 
     def get_code(self, data):
@@ -77,7 +76,7 @@ class HTTPClient(object):
         path = u.path
         if path == "":
             path = '/'
-            
+
         if PORT == None:
             PORT = 80
             payload = "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n".format(path,HOST)
@@ -86,22 +85,28 @@ class HTTPClient(object):
         
         self.connect(HOST, PORT)
         self.sendall(payload)
-        #print(payload, PORT)
         
         data = self.recvall(self.socket).split('\r\n')
         code = self.get_code(data)
         body = self.get_body(data)
-        #print("\n           CODE", data)
-        # print("\n           BODY", body)
+
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         p_url = urlparse(url)
         HOST = p_url.hostname
         PORT = p_url.port
-        path = p_url.path
         cont_type = "Content-Type: application/x-www-form-urlencoded"
-        payload = "POST {} HTTP/1.1\r\nHost: {}\r\n{}\r\n\r\n".format(path,HOST,cont_type)
+
+        path = p_url.path
+        if path == "":
+            path = '/'
+        
+        if PORT == None:
+            PORT = 80
+            payload = "POST {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n{}\r\n\r\n".format(path,HOST,cont_type)
+        else:
+            payload = "POST {} HTTP/1.1\r\nHost: {}:{}\r\nConnection: close\r\n{}\r\n\r\n".format(path,HOST,PORT,cont_type)
         
         a_len = 0
         if args:
