@@ -74,13 +74,14 @@ class HTTPClient(object):
         HOST = u.hostname
         PORT = u.port
         path = u.path
+
         if path == "":
             path = '/'
 
         if PORT == None:
             PORT = 80
-        #     payload = "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n".format(path,HOST)
-        # else:
+       
+        # HTTP GET HEADER
         payload = "GET {} HTTP/1.1\r\nHost: {}:{}\r\nConnection: close\r\n\r\n".format(path,HOST,PORT)
         
         self.connect(HOST, PORT)
@@ -94,12 +95,10 @@ class HTTPClient(object):
 
     def POST(self, url, args=None):
         p_url = urlparse(url)
-        #print("\n\n\n\n", p_url, "\n\n")
         HOST = p_url.hostname
         PORT = p_url.port
-        cont_type = "Content-Type: application/x-www-form-urlencoded"
-
         path = p_url.path
+
         if path == "":
             path = '/'
         
@@ -112,18 +111,18 @@ class HTTPClient(object):
             post_a = urlencode(args)
             a_len = len(post_a)
         
+        # HTTP POST Header
+        cont_type = "Content-Type: application/x-www-form-urlencoded"
         cont_len = "Content-Length: {}\r\n\r\n{}".format(a_len,post_a)
         payload = "POST {} HTTP/1.1\r\nHost: {}:{}\r\n{}\r\n{}\r\n\r\n".format(path,HOST,PORT,cont_type,cont_len)
 
-        #print("\n\n\n\n", payload, "\n\n")
         self.connect(HOST, PORT)
         self.sendall(payload)
 
         data = self.recvall(self.socket).split('\r\n')
-        # print("\n\n\n\n",data)
         code = self.get_code(data)
         body = self.get_body(data)
-        #print("\n\n\n\n",code, body)
+        
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
